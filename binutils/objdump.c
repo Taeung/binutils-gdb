@@ -1389,11 +1389,21 @@ try_print_file_open (const char *origname, const char *modname)
    If found, add location to print_files linked list.  */
 
 static struct print_file_list *
-update_source_path (const char *filename)
+update_source_path (const char *filename, char *objname)
 {
   struct print_file_list *p;
   const char *fname;
+  struct stat fst, ost;
   int i;
+
+  if (stat (filename, &fst) < 0)
+    return NULL;
+  else {
+    if (stat (objname, &ost) < 0)
+      return NULL;
+    if (fst.st_mtime > ost.st_mtime)
+      warn (_("Source file is more recent than object file\n"));
+  }
 
   p = try_print_file_open (filename, filename);
   if (p != NULL)
@@ -1551,7 +1561,7 @@ show_line (bfd *abfd, asection *section, bfd_vma addr_offset)
 	{
 	  if (reloc)
 	    filename = xstrdup (filename);
-	  p = update_source_path (filename);
+	  p = update_source_path (filename, bfd_get_filename (abfd));
 	}
 
       if (p != NULL && linenumber != p->last_line)
